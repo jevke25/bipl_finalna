@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIPL - Personalni Trener</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fjalla+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Overlay za loading i poruke -->
+        <div id="overlay">
+            <div class="spinner"></div>
+            <div id="overlay-message"></div>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="login-container">
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <form id="login-form">
+                    <div class="form-group">
+                        <input type="email" id="login-email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" id="login-password" placeholder="Šifra" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Prijavi se</button>
+                </form>
+                <div class="login-links">
+                    <a href="#" id="show-register">Nemaš nalog? Registruj se</a>
+                    <a href="#" id="show-pricing">Pogledaj cenovnik</a>
+                    <a href="#" id="show-transformations">Transformacije</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Screen -->
+        <div id="register-screen" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn" style="visibility: hidden;"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Registracija</h2>
+                <form id="register-form">
+                    <fieldset style="border:1px solid #eb7d00; border-radius:8px; margin-bottom:18px; padding:12px;">
+                        <legend style="color:#eb7d00; font-weight:bold;">Osnovni podaci</legend>
+                        <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" placeholder="Email" required></div>
+                        <div class="form-group"><label for="register-password">Šifra</label><input type="password" id="register-password" placeholder="Šifra" required></div>
+                        <div class="form-group"><label for="register-name">Ime i prezime</label><input type="text" id="register-name" placeholder="Ime i prezime" required></div>
+                        <div class="form-group"><label for="register-age">Godište</label><input type="number" id="register-age" placeholder="Godište" required></div>
+                    </fieldset>
+                    <fieldset style="border:1px solid #eb7d00; border-radius:8px; margin-bottom:18px; padding:12px;">
+                        <legend style="color:#eb7d00; font-weight:bold;">Fizički podaci</legend>
+                        <div class="form-group"><label for="register-height">Visina (cm)</label><input type="number" step="0.1" id="register-height" placeholder="Visina (cm)" required></div>
+                        <div class="form-group"><label for="register-weight">Težina (kg)</label><input type="number" step="0.1" id="register-weight" placeholder="Težina (kg)" required></div>
+                        <div class="form-group"><label for="register-waist">Obim struka (cm)</label><input type="number" step="0.1" id="register-waist" placeholder="Obim struka (cm)" required></div>
+                        <div class="form-group"><label for="register-shoulders">Obim ramena (cm)</label><input type="number" step="0.1" id="register-shoulders" placeholder="Obim ramena (cm)" required></div>
+                        <div class="form-group"><label for="register-legs">Obim nogu (cm)</label><input type="number" id="register-legs" placeholder="Obim nogu (cm)" required></div>
+                    </fieldset>
+                    <fieldset style="border:1px solid #eb7d00; border-radius:8px; margin-bottom:18px; padding:12px;">
+                        <legend style="color:#eb7d00; font-weight:bold;">Dodatni podaci</legend>
+                        <div class="form-group"><label for="register-sports-history">Sportska istorija</label><textarea id="register-sports-history" placeholder="Sportska istorija"></textarea></div>
+                        <div class="form-group"><label for="register-activity">Dnevna aktivnost</label><textarea id="register-activity" placeholder="Dnevna aktivnost"></textarea></div>
+                        <div class="form-group"><label for="register-training-desc">Opis treninga</label><textarea id="register-training-desc" placeholder="Opis treninga"></textarea></div>
+                        <div class="form-group"><label for="register-digestion">Problemi sa probavom</label><textarea id="register-digestion" placeholder="Problemi sa probavom"></textarea></div>
+                        <div class="form-group"><label for="register-stress">Nivo stresa</label><textarea id="register-stress" placeholder="Nivo stresa"></textarea></div>
+                        <div class="form-group"><label for="register-allergies">Alergije</label><textarea id="register-allergies" placeholder="Alergije"></textarea></div>
+                        <div class="form-group"><label for="register-energy">Padovi energije</label><textarea id="register-energy" placeholder="Padovi energije"></textarea></div>
+                        <div class="form-group"><label for="register-diet">Dijetna istorija</label><textarea id="register-diet" placeholder="Dijetna istorija"></textarea></div>
+                        <div class="form-group"><label for="register-menstrual">Menstrualni ciklus (za žene)</label><textarea id="register-menstrual" placeholder="Menstrualni ciklus (za žene)"></textarea></div>
+                        <div class="form-group"><label for="register-health">Zdravstveni problemi</label><textarea id="register-health" placeholder="Zdravstveni problemi"></textarea></div>
+                        <div class="form-group"><label for="register-goal">Tvoj cilj</label><textarea id="register-goal" placeholder="Tvoj cilj" required></textarea></div>
+                    </fieldset>
+                    <button type="submit" class="btn-primary" style="background:#eb7d00; border:none; border-radius:6px; font-size:1.1em; transition:background 0.2s;">Registruj se</button>
+                </form>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="login"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Pricing Screen -->
+        <div id="pricing-screen" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn" style="visibility: hidden;"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Cenovnik</h2>
+                <div class="pricing-toggle">
+                    <div class="toggle-option active" data-months="1">1 Mesec</div>
+                    <div class="toggle-option" data-months="3">3 Meseca</div>
+                    <div class="toggle-option" data-months="6">6 Meseci</div>
+                </div>
+                <div class="pricing-card active" data-months="1">
+                    <h3>Osnovni Paket</h3>
+                    <div class="price">130€</div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Personalizovani trening plan</li>
+                        <li><i class="fas fa-check"></i> Nedeljni check-in</li>
+                        <li><i class="fas fa-check"></i> Pristup aplikaciji</li>
+                    </ul>
+                    <button class="btn-primary">Izaberi</button>
+                </div>
+                <div class="pricing-card" data-months="3">
+                    <h3>Standardni Paket</h3>
+                    <div class="price">300€</div>
+                    <div class="savings">Ušteda 90€</div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Sve u Osnovnom paketu</li>
+                        <li><i class="fas fa-check"></i> Mesečne analize napretka</li>
+                        <li><i class="fas fa-check"></i> Prilagodljiv plan</li>
+                    </ul>
+                    <button class="btn-primary">Izaberi</button>
+                </div>
+                <div class="pricing-card" data-months="6">
+                    <h3>Premium Paket</h3>
+                    <div class="price">550€</div>
+                    <div class="savings">Ušteda 230€</div>
+                    <ul class="features">
+                        <li><i class="fas fa-check"></i> Sve u Standardnom paketu</li>
+                        <li><i class="fas fa-check"></i> Nedeljni video pozivi</li>
+                        <li><i class="fas fa-check"></i> Potpuna podrška 24/7</li>
+                    </ul>
+                    <button class="btn-primary">Izaberi</button>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="login"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Transformations Screen -->
+        <div id="transformations-screen" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn" style="visibility: hidden;"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Transformacije</h2>
+                <div class="transformations-grid">
+                    <!-- Slike će biti dinamički dodate preko JS -->
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="login"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Client Dashboard -->
+        <div id="client-dashboard" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn" style="visibility: hidden;"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Dobrodošli, <span id="client-name"></span></h2>
+                <div class="client-menu">
+                    <div class="menu-item" data-section="training">
+                        <i class="fas fa-dumbbell"></i>
+                        <span>Trening</span>
+                    </div>
+                    <div class="menu-item" data-section="measurements">
+                        <i class="fas fa-ruler-combined"></i>
+                        <span>Obimi</span>
+                    </div>
+                    <div class="menu-item" data-section="progress">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Napredak</span>
+                    </div>
+                    <div class="menu-item" data-section="contact">
+                        <i class="fas fa-envelope"></i>
+                        <span>Kontaktiraj trenera</span>
+                    </div>
+                    <div class="menu-item" data-section="record">
+                        <i class="fas fa-video"></i>
+                        <span>Snimaj se</span>
+                    </div>
+                    <div class="menu-item" data-section="nutrition">
+                        <i class="fas fa-utensils"></i>
+                        <span>Praćenje ishrane</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="client-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="client-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Client Training Section -->
+        <div id="client-training" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Trening Plan</h2>
+                <div class="info-box">
+                    <p>U koliko ste u mogućnosti, snimite sebe kako radite ovu vežbu i pošaljite Danijelu na WhatsApp za feedback.</p>
+                    <button class="btn-understand">Razumem</button>
+                </div>
+                <div class="day-selector">
+                    <div class="day-option active" data-day="1">Dan 1</div>
+                    <div class="day-option" data-day="2">Dan 2</div>
+                    <div class="day-option" data-day="3">Dan 3</div>
+                    <div class="day-option" data-day="4">Dan 4</div>
+                    <div class="day-option" data-day="5">Dan 5</div>
+                </div>
+                <div class="exercises-container">
+                    <!-- Vežbe će biti dinamički dodate preko JS -->
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="client-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="client-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Client Measurements Section -->
+        <div id="client-measurements" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Unesi Obime</h2>
+                <div class="info-box">
+                    <p>Molimo vas da svake nedelje unesete svoje obime kako bismo pratili vaš napredak.</p>
+                    <button class="btn-understand">Razumem</button>
+                </div>
+                <form id="measurements-form">
+                    <div class="form-group">
+                        <label for="measurement-weight">Težina (kg)</label>
+                        <input type="number" step="0.1" id="measurement-weight" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="measurement-waist">Obim struka (cm)</label>
+                        <input type="number" step="0.1" id="measurement-waist" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="measurement-shoulders">Obim ramena (cm)</label>
+                        <input type="number" step="0.1" id="measurement-shoulders" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="measurement-legs">Obim nogu (cm)</label>
+                        <input type="number" id="measurement-legs" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Sačuvaj</button>
+                </form>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="client-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="client-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Client Progress Section -->
+        <div id="client-progress" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Tvoj Napredak</h2>
+                <div class="progress-selector">
+                    <div class="progress-option active" data-type="weight">Težina</div>
+                    <div class="progress-option" data-type="waist">Struk</div>
+                    <div class="progress-option" data-type="shoulders">Ramena</div>
+                    <div class="progress-option" data-type="legs">Noge</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="progress-chart"></canvas>
+                </div>
+                <div class="progress-summary">
+                    <div class="summary-item">
+                        <span class="summary-label">Početna težina:</span>
+                        <span class="summary-value" id="start-weight">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Trenutna težina:</span>
+                        <span class="summary-value" id="current-weight">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Promena:</span>
+                        <span class="summary-value" id="weight-change">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="client-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="client-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Client Nutrition Section -->
+        <div id="client-nutrition" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Praćenje Ishrane</h2>
+                <div class="nutrition-date-selector">
+                    <i class="fas fa-chevron-left prev-day"></i>
+                    <span class="current-date">Danas, 15. Maj</span>
+                    <i class="fas fa-chevron-right next-day"></i>
+                </div>
+                <div class="nutrition-summary">
+                    <div class="summary-card">
+                        <h3>Kalorije</h3>
+                        <div class="progress-circle" data-value="0" data-max="2500">
+                            <span class="progress-value">0</span>
+                            <span class="progress-max">/ 2500</span>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Proteini</h3>
+                        <div class="progress-value">0g</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Ugljeni hidrati</h3>
+                        <div class="progress-value">0g</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Masti</h3>
+                        <div class="progress-value">0g</div>
+                    </div>
+                </div>
+                <div class="add-food-container">
+                    <h3>Dodaj obrok</h3>
+                    <div class="search-container">
+                        <input type="text" id="food-search" placeholder="Pretraži hranu...">
+                        <button id="search-food"><i class="fas fa-search"></i></button>
+                    </div>
+                    <div class="food-results">
+                        <!-- Rezultati pretrage će biti dinamički dodati -->
+                    </div>
+                    <div class="selected-foods">
+                        <h4>Odabrana hrana</h4>
+                        <div class="selected-list">
+                            <!-- Odabrana hrana će biti dinamički dodata -->
+                        </div>
+                        <button id="save-meal" class="btn-primary">Sačuvaj obrok</button>
+                    </div>
+                </div>
+                <div class="meal-history">
+                    <h3>Današnji obroci</h3>
+                    <div class="meals-list">
+                        <!-- Obroci će biti dinamički dodati -->
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="client-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="client-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Client Profile Section -->
+        <div id="client-profile" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Tvoj Profil</h2>
+                <div class="profile-info">
+                    <div class="info-item">
+                        <span class="info-label">Ime i prezime:</span>
+                        <span class="info-value" id="profile-name">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value" id="profile-email">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Godište:</span>
+                        <span class="info-value" id="profile-age">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Visina:</span>
+                        <span class="info-value" id="profile-height">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Težina:</span>
+                        <span class="info-value" id="profile-weight">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Cilj:</span>
+                        <span class="info-value" id="profile-goal">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Status:</span>
+                        <span class="info-value" id="profile-status">-</span>
+                    </div>
+                </div>
+                <button id="edit-profile" class="btn-secondary">Izmeni profil</button>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="client-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="client-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Dashboard -->
+        <div id="trainer-dashboard" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn" style="visibility: hidden;"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Dobrodošli, Treneru</h2>
+                <div class="trainer-menu">
+                    <div class="menu-item" data-section="clients">
+                        <i class="fas fa-users"></i>
+                        <span>Upravljanje Klijentima</span>
+                    </div>
+                    <div class="menu-item" data-section="exercises">
+                        <i class="fas fa-dumbbell"></i>
+                        <span>Upravljanje Vezbama</span>
+                    </div>
+                    <div class="menu-item" data-section="stats">
+                        <i class="fas fa-chart-pie"></i>
+                        <span>Statistika</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Clients Section -->
+        <div id="trainer-clients" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Upravljanje Klijentima</h2>
+                <div class="client-filters">
+                    <div class="filter-option active" data-filter="all">Svi Klijenti</div>
+                    <div class="filter-option" data-filter="active">Aktivni</div>
+                    <div class="filter-option" data-filter="pending-payment">Čekaju uplatu</div>
+                    <div class="filter-option" data-filter="pending-training">Čekaju trening</div>
+                </div>
+                <div class="clients-list">
+                    <!-- Klijenti će biti dinamički dodati -->
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Client Details -->
+        <div id="trainer-client-details" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Detalji o Klijentu</h2>
+                <div class="client-details">
+                    <div class="details-header">
+                        <h3 id="client-detail-name"></h3>
+                        <div class="client-status">
+                            <span id="client-payment-status"></span>
+                            <span id="client-training-status"></span>
+                        </div>
+                    </div>
+                    <div class="details-info">
+                        <div class="info-item">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value" id="client-detail-email"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Godište:</span>
+                            <span class="info-value" id="client-detail-age"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Visina:</span>
+                            <span class="info-value" id="client-detail-height"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Težina:</span>
+                            <span class="info-value" id="client-detail-weight"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Cilj:</span>
+                            <span class="info-value" id="client-detail-goal"></span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Zdravstveni problemi:</span>
+                            <span class="info-value" id="client-detail-health"></span>
+                        </div>
+                    </div>
+                    <div class="client-actions">
+                        <button id="confirm-payment" class="btn-primary">Potvrdi Uplatu</button>
+                        <button id="add-training" class="btn-primary">Dodaj Trening</button>
+                        <button id="view-progress" class="btn-secondary">Pogledaj Napredak</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Add Training -->
+        <div id="trainer-add-training" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Dodaj trening za <span id="training-client-name"></span></h2>
+                <div id="training-day-selector" style="margin-bottom:18px;"></div>
+                <div class="form-group">
+                    <label for="muscle-group-dropdown">Izaberi grupu mišića</label>
+                    <select id="muscle-group-dropdown" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"></select>
+                </div>
+                <div class="form-group">
+                    <label for="exercise-dropdown">Izaberi vežbu</label>
+                    <select id="exercise-dropdown" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;">
+                        <option value="">Izaberi vežbu</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="sets-input">Serije</label>
+                    <input type="number" id="sets-input" min="1" value="3" style="width:80px;">
+                </div>
+                <div class="form-group">
+                    <label for="reps-input">Ponavljanja</label>
+                    <input type="number" id="reps-input" min="1" value="12" style="width:80px;">
+                </div>
+                <button id="add-exercise-to-list" class="btn-primary" style="margin-bottom:18px;">Dodaj vežbu</button>
+                <div class="selected-list"></div>
+                <button id="save-training" class="btn-primary" style="background:#eb7d00; border:none; border-radius:6px; font-size:1.1em; margin-top:18px;">Sačuvaj trening</button>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Exercises Section -->
+        <div id="trainer-exercises" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Upravljanje Vezbama</h2>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label for="exercise-group-filter">Filter po grupi mišića</label>
+                    <select id="exercise-group-filter" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;"></select>
+                </div>
+                <button id="add-exercise" class="btn-primary">Dodaj Novu Vezbu</button>
+                <div class="exercises-list">
+                    <!-- Vežbe će biti dinamički dodate -->
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Add Exercise -->
+        <div id="trainer-add-exercise" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Dodaj Novu Vezbu</h2>
+                <form id="exercise-form">
+                    <div class="form-group">
+                        <label for="exercise-name">Naziv vežbe</label>
+                        <input type="text" id="exercise-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="exercise-group">Grupa mišića</label>
+                        <input type="text" id="exercise-group" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="exercise-description">Opis vežbe</label>
+                        <textarea id="exercise-description" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="exercise-video">Video link (Vimeo)</label>
+                        <input type="url" id="exercise-video" required>
+                    </div>
+                    <button type="submit" class="btn-primary">Sačuvaj Vezbu</button>
+                </form>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Stats Section -->
+        <div id="trainer-stats" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Statistika</h2>
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-clients">0</div>
+                        <div class="stat-label">Ukupno klijenata</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="active-clients">0</div>
+                        <div class="stat-label">Aktivnih klijenata</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pending-payments">0</div>
+                        <div class="stat-label">Čeka uplatu</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pending-trainings">0</div>
+                        <div class="stat-label">Čeka trening</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="clients-chart"></canvas>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+
+        <!-- Trainer Profile Section -->
+        <div id="trainer-profile" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Tvoj Profil</h2>
+                <div class="profile-info">
+                    <div class="info-item">
+                        <span class="info-label">Ime i prezime:</span>
+                        <span class="info-value" id="trainer-profile-name">-</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email:</span>
+                        <span class="info-value" id="trainer-profile-email">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-nav">
+                <a href="#" class="nav-item" data-screen="trainer-dashboard"><i class="fas fa-home"></i></a>
+                <a href="#" class="nav-item" data-screen="trainer-profile"><i class="fas fa-user"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/client.js"></script>
+    <script src="js/trainer.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
