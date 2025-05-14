@@ -117,40 +117,46 @@ const Trainer = {
     },
     
     togglePaymentStatus: function(client) {
-        Utils.showLoading('Ažuriranje statusa uplate...');
+    console.log('Client ID:', client.id);
+    console.log('Auth Token:', App.authToken);
+    console.log('Payload:', { has_paid: !client.has_paid });
+
+    Utils.showLoading('Ažuriranje statusa uplate...');
+    
+    fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/user/${client.id}`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${App.authToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            has_paid: !client.has_paid
+        })
+    })
+    .then(response => {
+        console.log('API Response:', response);
+        if (!response.ok) throw new Error('Greška pri ažuriranju statusa uplate');
+        return response.json();
+    })
+    .then(updatedClient => {
+        console.log('Updated Client:', updatedClient);
+        Utils.hideLoading();
+        Utils.showAlert(`Status uplate uspešno ažuriran na ${updatedClient.has_paid ? 'potvrđeno' : 'čekanje'}.`, 'success');
+        this.showClientDetails(updatedClient);
         
-        fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/user/${client.id}`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${App.authToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                has_paid: !client.has_paid
-            })
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Greška pri ažuriranju statusa uplate');
-            return response.json();
-        })
-        .then(updatedClient => {
-            Utils.hideLoading();
-            Utils.showAlert(`Status uplate uspešno ažuriran na ${updatedClient.has_paid ? 'potvrđeno' : 'čekanje'}.`, 'success');
-            this.showClientDetails(updatedClient);
-            
-            // If payment is confirmed, set expiration after 31 days
-            if (updatedClient.has_paid) {
-                setTimeout(() => {
-                    this.setPaymentExpired(updatedClient.id);
-                }, 31 * 24 * 60 * 60 * 1000); // 31 days in milliseconds
-            }
-        })
-        .catch(error => {
-            console.error('Greška:', error);
-            Utils.hideLoading();
-            App.handleApiError(error);
-        });
-    },
+        // If payment is confirmed, set expiration after 31 days
+        if (updatedClient.has_paid) {
+            setTimeout(() => {
+                this.setPaymentExpired(updatedClient.id);
+            }, 31 * 24 * 60 * 60 * 1000); // 31 days in milliseconds
+        }
+    })
+    .catch(error => {
+        console.error('Greška:', error);
+        Utils.hideLoading();
+        App.handleApiError(error);
+    });
+},
     
     setPaymentExpired: function(clientId) {
         fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/user/${clientId}`, {

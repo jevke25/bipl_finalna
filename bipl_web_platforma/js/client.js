@@ -32,14 +32,36 @@ const Client = {
     },
     
     loadExercises: function(day) {
-        Utils.showLoading('Učitavanje treninga...');
-        this.currentDay = day;
-        if (!App.currentUser || !App.currentUser.id) {
-            Utils.showAlert('Nedostaje ID korisnika!', 'error');
-            Utils.hideLoading();
-            return;
+    Utils.showLoading('Učitavanje treninga...');
+    this.currentDay = day;
+
+    if (!App.currentUser || !App.currentUser.id) {
+        Utils.showAlert('Nedostaje ID korisnika!', 'error');
+        Utils.hideLoading();
+        return;
+    }
+
+    // Prvo povuci sve vežbe
+    fetch('https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/exercise', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${App.authToken}`,
+            'Content-Type': 'application/json'
         }
-        fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/training?user_id=${App.currentUser.id}&day=${day}`, {
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Greška pri učitavanju vežbi');
+        return response.json();
+    })
+    .then(allExercises => {
+        // Mapiraj vežbe po ID-u za brzo pretraživanje
+        const exerciseMap = {};
+        allExercises.forEach(exercise => {
+            exerciseMap[exercise.id] = exercise;
+        });
+
+        // Sada povuci trening za korisnika i dan
+        return fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/training?user_id=${App.currentUser.id}&day=${day}`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${App.authToken}`,
@@ -48,63 +70,87 @@ const Client = {
         })
         .then(response => {
             if (!response.ok) throw new Error('Greška pri učitavanju treninga');
-            return response.json();
-        })
-        .then(data => {
-            const container = document.querySelector('.exercises-container');
-            if (!container) return;
-            container.innerHTML = '';
-            const exercises = Array.isArray(data) ? data : [];
-            if (exercises.length === 0) {
-                container.innerHTML = '<p>Nema treninga za ovaj dan. Kontaktirajte trenera.</p>';
-                Utils.hideLoading();
-                return;
-            }
-            const groups = {};
-            exercises.forEach(exercise => {
-                if (!groups[exercise.grupa_misica]) {
-                    groups[exercise.grupa_misica] = [];
-                }
-                groups[exercise.grupa_misica].push(exercise);
-            });
-            for (const group in groups) {
-                const groupElement = document.createElement('div');
-                groupElement.className = 'exercise-group';
-                const groupTitle = document.createElement('h4');
-                groupTitle.textContent = group;
-                groupElement.appendChild(groupTitle);
-                groups[group].forEach(exercise => {
-                    const exerciseElement = document.createElement('div');
-                    exerciseElement.className = 'exercise-item';
-                    exerciseElement.innerHTML = `
-                        <div class="exercise-info">
-                            <h5>${exercise.naziv_vezbe}</h5>
-                            <p>${exercise.sets} serija × ${exercise.repetitions} ponavljanja</p>
-                        </div>
-                        <div class="exercise-actions">
-                            <button class="play-btn" data-video="${exercise.video_link}">
-                                <i class="fas fa-play"></i>
-                            </button>
-                        </div>
-                    `;
-                    groupElement.appendChild(exerciseElement);
-                });
-                container.appendChild(groupElement);
-            }
-            document.querySelectorAll('.play-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const videoUrl = this.getAttribute('data-video');
-                    window.open(videoUrl, '_blank');
-                });
-            });
-            Utils.hideLoading();
-        })
-        .catch(error => {
-            console.error('Greška:', error);
-            Utils.hideLoading();
-            App.handleApiError(error);
+            return response.json().then(trainingData => ({
+                trainingData: trainingData.result1 || [], // Pristup nizu unutar objekta
+                exerciseMap
+            }));
         });
-    },
+    })
+    .then(({ trainingData, exerciseMap }) => {
+        const container = document.querySelector('.exercises-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        // Proverite da li je trainingData validan niz
+        if (!Array.isArray(trainingData) || trainingData.length === 0) {
+            console.error('Greška: trainingData nije validan niz ili je prazan:', trainingData);
+            container.innerHTML = '<p>Nema treninga za ovaj dan. Kontaktirajte trenera.</p>';
+            Utils.hideLoading();
+            return;
+        }
+
+        // Grupisanje vežbi po grupi mišića
+        const groups = {};
+        trainingData.forEach(entry => {
+            const exercise = exerciseMap[entry.exercise_id];
+            if (!exercise) return; // Preskoči ako vežba ne postoji
+
+            const fullExercise = {
+                ...exercise,
+                sets: entry.sets,
+                repetitions: entry.repetitions
+            };
+
+            if (!groups[exercise.grupa_misica]) {
+                groups[exercise.grupa_misica] = [];
+            }
+            groups[exercise.grupa_misica].push(fullExercise);
+        });
+
+        // Prikaz grupisanih vežbi
+        for (const group in groups) {
+            const groupElement = document.createElement('div');
+            groupElement.className = 'exercise-group';
+            const groupTitle = document.createElement('h4');
+            groupTitle.textContent = group;
+            groupElement.appendChild(groupTitle);
+
+            groups[group].forEach(exercise => {
+                const exerciseElement = document.createElement('div');
+                exerciseElement.className = 'exercise-item';
+                exerciseElement.innerHTML = `
+                    <div class="exercise-info">
+                        <h5>${exercise.naziv_vezbe}</h5>
+                        <p>${exercise.sets} serija × ${exercise.repetitions} ponavljanja</p>
+                    </div>
+                    <div class="exercise-actions">
+                        <button class="play-btn" data-video="${exercise.video_link}">
+                            <i class="fas fa-play"></i>
+                        </button>
+                    </div>
+                `;
+                groupElement.appendChild(exerciseElement);
+            });
+
+            container.appendChild(groupElement);
+        }
+
+        // Dodaj event listenere za play dugmad
+        document.querySelectorAll('.play-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const videoUrl = this.getAttribute('data-video');
+                window.open(videoUrl, '_blank');
+            });
+        });
+
+        Utils.hideLoading();
+    })
+    .catch(error => {
+        console.error('Greška:', error);
+        Utils.hideLoading();
+        App.handleApiError(error);
+    });
+},
     
     saveMeasurements: function(data) {
         Utils.showLoading('Čuvanje obima...');
