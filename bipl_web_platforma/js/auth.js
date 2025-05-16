@@ -1,43 +1,47 @@
 const Auth = {
-    login: function(email, password) {
-        Utils.showLoading('Prijavljivanje...');
+login: function(email, password) {
+    Utils.showLoading('Prijavljivanje...');
+    
+    fetch('https://x8ki-letl-twmt.n7.xano.io/api:rGTwu6BM/auth/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || 'Neuspešna prijava');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Postavi korisničke podatke i token
+        App.authToken = data.authToken;
+        App.currentUser = data.user;
         
-        fetch('https://x8ki-letl-twmt.n7.xano.io/api:rGTwu6BM/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                email: email,
-                password: password
-            })
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Neuspešna prijava. Proverite email i šifru.');
-            }
-            return response.json();
-        })
-        .then(data => {
-            App.authToken = data.authToken;
-            App.currentUser = { ...data, role: data.role };
-            
-            localStorage.setItem('bipl_auth_token', data.authToken);
-            localStorage.setItem('bipl_user', JSON.stringify(App.currentUser));
-            
-            if (data.role === 'client') {
-                App.showScreen('client-dashboard');
-            } else if (data.role === 'trainer') {
-                App.showScreen('trainer-dashboard');
-            }
-            
-            Utils.hideLoading();
-        })
-        .catch(error => {
-            console.error('Greška pri prijavi:', error);
-            Utils.hideLoading();
-            Utils.showAlert(error.message, 'error');
-        });
+        // Sačuvaj podatke u localStorage
+        localStorage.setItem('bipl_auth_token', data.authToken);
+        localStorage.setItem('bipl_user', JSON.stringify(data.user));
+        
+        // Učitaj podatke pre prikazivanja ekrana
+        if (data.user.role === 'client') {
+            Client.loadProfile(); // Pozovi direktno
+            App.showScreen('client-dashboard');
+        } else if (data.user.role === 'trainer') {
+            Trainer.loadStats(); // Pozovi direktno
+            App.showScreen('trainer-dashboard');
+        }
+        
+        Utils.hideLoading();
+    })
+    .catch(error => {
+        console.error('Login error:', error);
+        Utils.hideLoading();
+        Utils.showAlert(error.message || 'Neuspešna prijava. Proverite email i lozinku.', 'error');
+    });
     },
     
     register: function(formData) {

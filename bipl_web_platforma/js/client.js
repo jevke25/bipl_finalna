@@ -305,34 +305,36 @@ const Client = {
     },
     
     loadProfile: function() {
-        const user = App.currentUser || {};
-        const elName = document.getElementById('profile-name');
-        if (elName) elName.textContent = user.Ime_prezime || '-';
-        const elEmail = document.getElementById('profile-email');
-        if (elEmail) elEmail.textContent = user.email || '-';
-        const elAge = document.getElementById('profile-age');
-        if (elAge) elAge.textContent = user.Godiste || '-';
-        const elHeight = document.getElementById('profile-height');
-        if (elHeight) elHeight.textContent = user.Visina ? `${user.Visina} cm` : '-';
-        const elWeight = document.getElementById('profile-weight');
-        if (elWeight) elWeight.textContent = user.Tezina ? `${user.Tezina} kg` : '-';
-        const elGoal = document.getElementById('profile-goal');
-        if (elGoal) elGoal.textContent = user.cilj || '-';
-        let status = '';
-        if (user.has_paid) {
-            status += 'Uplata potvrđena';
-        } else {
-            status += 'Čeka se uplata';
-        }
-        status += ' • ';
-        if (user.has_Training) {
-            status += 'Trening dostupan';
-        } else {
-            status += 'Čeka se trening';
-        }
-        const elStatus = document.getElementById('profile-status');
-        if (elStatus) elStatus.textContent = status;
-    },
+    // Get fresh user data from localStorage
+    const userData = localStorage.getItem('bipl_user');
+    const user = userData ? JSON.parse(userData) : App.currentUser || {};
+
+    // Immediately update all profile fields
+    const elements = {
+        'profile-name': user.Ime_prezime,
+        'client-name': user.Ime_prezime, // Add this to update dashboard name
+        'profile-email': user.email,
+        'profile-age': user.Godiste,
+        'profile-height': user.Visina ? `${user.Visina} cm` : '-',
+        'profile-weight': user.Tezina ? `${user.Tezina} kg` : '-',
+        'profile-goal': user.cilj
+    };
+
+    // Update all elements that exist
+    Object.entries(elements).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = value || '-';
+    });
+
+    // Update status
+    let status = '';
+    status += user.has_paid ? 'Uplata potvrđena' : 'Čeka se uplata';
+    status += ' • ';
+    status += user.has_Training ? 'Trening dostupan' : 'Čeka se trening';
+    
+    const elStatus = document.getElementById('profile-status');
+    if (elStatus) elStatus.textContent = status;
+},
     
     loadTransformations: function() {
         const container = document.querySelector('.transformations-grid');
@@ -506,117 +508,57 @@ const Client = {
         });
     },
     
-    loadNutritionData: function() {
-        Utils.showLoading('Učitavanje podataka o ishrani...');
-        
-        const date = this.formatDate(this.currentNutritionDate);
-        document.querySelector('.current-date').textContent = this.formatDateForDisplay(this.currentNutritionDate);
-        
-        fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/food_entries?user_id=${App.currentUser.id}&date=${date}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${App.authToken}`,
-                'Content-Type': 'application/json'
+   loadNutritionData: function() {
+    Utils.showLoading('Učitavanje podataka o ishrani...');
+    
+    fetch('https://x8ki-letl-twmt.n7.xano.io/api:rGTwu6BM/nutrition', {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${App.authToken}`,
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Greška pri učitavanju podataka o ishrani.');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (!Array.isArray(data)) {
+            throw new Error('Podaci o ishrani nisu u očekivanom formatu.');
+        }
+
+        let totalCalories = 0;
+        let totalProtein = 0;
+        let totalCarbs = 0;
+        let totalFat = 0;
+
+        // Iteriraj kroz podatke i obradi samo validne objekte
+        data.forEach(item => {
+            if (item && typeof item === 'object') {
+                totalCalories += item.calories || 0;
+                totalProtein += item.protein || 0;
+                totalCarbs += item.carbs || 0;
+                totalFat += item.fat || 0;
             }
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Greška pri učitavanju podataka o ishrani');
-            return response.json();
-        })
-        .then(data => {
-            // Group entries by meal time (we'll assume all are from today for simplicity)
-            const meals = {};
-            
-            data.forEach(entry => {
-                if (!meals[entry.meal_time]) {
-                    meals[entry.meal_time] = [];
-                }
-                meals[entry.meal_time].push(entry);
-            });
-            
-            // Display meals
-            const container = document.querySelector('.meals-list');
-            container.innerHTML = '';
-            
-            if (Object.keys(meals).length === 0) {
-                container.innerHTML = '<p>Nema unosa hrane za ovaj dan.</p>';
-                this.updateNutritionSummary({});
-                Utils.hideLoading();
-                return;
-            }
-            
-            // Calculate totals
-            let totalCalories = 0;
-            let totalProtein = 0;
-            let totalCarbs = 0;
-            let totalFat = 0;
-            
-            for (const time in meals) {
-                const mealItem = document.createElement('div');
-                mealItem.className = 'meal-item';
-                
-                let mealCalories = 0;
-                let mealProtein = 0;
-                let mealCarbs = 0;
-                let mealFat = 0;
-                
-                let foodsHtml = '';
-                
-                meals[time].forEach(entry => {
-                    const calories = entry.food.calories * entry.quantity;
-                    const protein = entry.food.protein * entry.quantity;
-                    const carbs = entry.food.carbs * entry.quantity;
-                    const fat = entry.food.fat * entry.quantity;
-                    
-                    mealCalories += calories;
-                    mealProtein += protein;
-                    mealCarbs += carbs;
-                    mealFat += fat;
-                    
-                    totalCalories += calories;
-                    totalProtein += protein;
-                    totalCarbs += carbs;
-                    totalFat += fat;
-                    
-                    foodsHtml += `
-                        <li class="meal-food">
-                            <span class="meal-food-name">${entry.food.name} (${entry.quantity} ${entry.food.portion_size})</span>
-                            <span class="meal-food-values">
-                                <span>${calories.toFixed(0)} kcal</span>
-                                <span>${protein.toFixed(1)}g P</span>
-                                <span>${carbs.toFixed(1)}g UH</span>
-                                <span>${fat.toFixed(1)}g M</span>
-                            </span>
-                        </li>
-                    `;
-                });
-                
-                mealItem.innerHTML = `
-                    <div class="meal-header">
-                        <span class="meal-time">${time}</span>
-                        <span class="meal-calories">${mealCalories.toFixed(0)} kcal</span>
-                    </div>
-                    <ul class="meal-foods">${foodsHtml}</ul>
-                `;
-                
-                container.appendChild(mealItem);
-            }
-            
-            // Update summary
-            this.updateNutritionSummary({
-                calories: totalCalories,
-                protein: totalProtein,
-                carbs: totalCarbs,
-                fat: totalFat
-            });
-            
-            Utils.hideLoading();
-        })
-        .catch(error => {
-            console.error('Greška:', error);
-            Utils.hideLoading();
-            App.handleApiError(error);
         });
+
+        // Ažuriraj UI sa sumarnim podacima
+        this.updateNutritionSummary({
+            calories: totalCalories,
+            protein: totalProtein,
+            carbs: totalCarbs,
+            fat: totalFat
+        });
+
+        Utils.hideLoading();
+    })
+    .catch(error => {
+        console.error('Greška:', error);
+        Utils.hideLoading();
+        Utils.showAlert('Došlo je do greške prilikom učitavanja podataka o ishrani.', 'error');
+    });
     },
     
     updateNutritionSummary: function({calories = 0, protein = 0, carbs = 0, fat = 0}) {

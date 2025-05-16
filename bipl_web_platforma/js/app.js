@@ -1,29 +1,5 @@
 // Main Application Script
-document.addEventListener('DOMContentLoaded', function() {
-  
-    // Initialize the application
-    App.init();
-      App.init = function() {
-  // Restore session
-  const userData = localStorage.getItem('bipl_user');
-  if (userData) {
-    try {
-      App.currentUser = JSON.parse(userData);
-    } catch (e) {
-      console.error('Ne mogu da parsiram podatke o korisniku', e);
-      App.currentUser = null;
-    }
-  }
-  const token = localStorage.getItem('bipl_auth_token');
-  if (token) {
-    App.authToken = token;
-    App.checkAuth();
-  } else {
-    App.showScreen('login-screen');
-  }
-  App.initEventListeners();
-};
-});
+document.addEventListener('DOMContentLoaded', () => App.init());
 
 
 const App = {
@@ -264,57 +240,67 @@ const App = {
     },
     
     showScreen: function(screenId) {
-        // Hide current screen
-        if (this.currentScreen) {
-            const el = document.getElementById(this.currentScreen);
-            if (el) el.classList.remove('active');
+        // Save current screen to history before changing
+        if (this.currentScreen && screenId !== 'login-screen') {
             this.previousScreens.push(this.currentScreen);
         }
+
+        // Hide ALL screens first
+        document.querySelectorAll('.screen').forEach(screen => {
+            screen.classList.remove('active');
+        });
         
         // Show new screen
         const newEl = document.getElementById(screenId);
-        if (newEl) newEl.classList.add('active');
-        this.currentScreen = screenId;
+        if (newEl) {
+            newEl.classList.add('active');
+            this.currentScreen = screenId;
+        }
         
-        // Prikaz/skrivanje bottom-bar-a
+        // Handle bottom navigation
         const allBottomNavs = document.querySelectorAll('.bottom-nav');
         allBottomNavs.forEach(nav => nav.style.display = 'none');
-        // Ekrani gde treba prikazati bottom-bar
+        
         const showBottomBarScreens = [
-            'client-dashboard', 'client-profile', 'client-training', 'client-measurements', 'client-progress', 'client-nutrition',
-            'trainer-dashboard', 'trainer-profile', 'trainer-clients', 'trainer-client-details', 'trainer-add-training', 'trainer-exercises', 'trainer-add-exercise', 'trainer-stats'
+            'client-dashboard', 'client-profile', 'client-training', 
+            'client-measurements', 'client-progress', 'client-nutrition',
+            'trainer-dashboard', 'trainer-profile', 'trainer-clients', 
+            'trainer-client-details', 'trainer-add-training', 
+            'trainer-exercises', 'trainer-add-exercise', 'trainer-stats'
         ];
+        
         if (showBottomBarScreens.includes(screenId)) {
             const nav = document.querySelector(`#${screenId} .bottom-nav`);
             if (nav) nav.style.display = '';
         }
-        
-        // Load data if needed
-        if (screenId === 'client-dashboard' && this.currentUser) {
-            const el = document.getElementById('client-name');
-            if (el) el.textContent = this.currentUser.Ime_prezime || '-';
-        } else if (screenId === 'trainer-dashboard' && this.currentUser) {
-            const el1 = document.getElementById('trainer-profile-name');
-            const el2 = document.getElementById('trainer-profile-email');
-            if (el1) el1.textContent = this.currentUser.Ime_prezime || '-';
-            if (el2) el2.textContent = this.currentUser.email || '-';
-            Trainer.loadStats && Trainer.loadStats();
-        } else if (screenId === 'client-profile' && this.currentUser) {
-            Client.loadProfile && Client.loadProfile();
-        } else if (screenId === 'trainer-profile' && this.currentUser) {
-            Trainer.loadProfile && Trainer.loadProfile();
+
+        // Load data immediately when showing screens
+        if (this.currentUser) {
+            if (screenId === 'client-dashboard') {
+                const el = document.getElementById('client-name');
+                if (el) el.textContent = this.currentUser.Ime_prezime || '-';
+                if (typeof Client !== 'undefined' && Client.loadProfile) {
+                    Client.loadProfile();
+                }
+            } else if (screenId === 'trainer-dashboard') {
+                const el1 = document.getElementById('trainer-profile-name');
+                const el2 = document.getElementById('trainer-profile-email');
+                if (el1) el1.textContent = this.currentUser.Ime_prezime || '-';
+                if (el2) el2.textContent = this.currentUser.email || '-';
+                if (typeof Trainer !== 'undefined' && Trainer.loadStats) {
+                    Trainer.loadStats();
+                }
+            }
         }
     },
-    
+
     goBack: function() {
-        if (this.previousScreens.length > 0) {
+        if (this.previousScreens && this.previousScreens.length > 0) {
             const prevScreen = this.previousScreens.pop();
-            document.getElementById(this.currentScreen).classList.remove('active');
-            document.getElementById(prevScreen).classList.add('active');
-            this.currentScreen = prevScreen;
+            this.showScreen(prevScreen);
         }
     },
-    
+
     checkAuth: function() {
         Utils.showLoading('Proveravanje autentifikacije...');
         
@@ -334,12 +320,11 @@ const App = {
         .then(data => {
             this.currentUser = data;
             localStorage.setItem('bipl_user', JSON.stringify(data));
+            this.previousScreens = [];
             
-            if (data.role === 'client') {
-                this.showScreen('client-dashboard');
-            } else if (data.role === 'trainer') {
-                this.showScreen('trainer-dashboard');
-            }
+            // Show appropriate screen based on role
+            const screenId = data.role === 'client' ? 'client-dashboard' : 'trainer-dashboard';
+            this.showScreen(screenId);
             
             Utils.hideLoading();
         })
@@ -347,10 +332,12 @@ const App = {
             console.error('Greška pri proveri autentifikacije:', error);
             localStorage.removeItem('bipl_auth_token');
             localStorage.removeItem('bipl_user');
+            this.previousScreens = [];
             this.showScreen('login-screen');
             Utils.hideLoading();
             Utils.showAlert('Sesija je istekla. Molimo prijavite se ponovo.', 'error');
         });
+    
     },
     
     handleApiError: function(error) {

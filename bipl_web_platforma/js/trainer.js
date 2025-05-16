@@ -116,15 +116,12 @@ const Trainer = {
         addTrainingBtn.onclick = () => this.showAddTrainingScreen(client);
     },
     
-    togglePaymentStatus: function(client) {
-    console.log('Client ID:', client.id);
-    console.log('Auth Token:', App.authToken);
-    console.log('Payload:', { has_paid: !client.has_paid });
-
+  togglePaymentStatus: function(client) {
     Utils.showLoading('Ažuriranje statusa uplate...');
     
+    // Fixed API endpoint - removed "update" from the path
     fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/user/${client.id}`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
             'Authorization': `Bearer ${App.authToken}`,
             'Content-Type': 'application/json'
@@ -134,27 +131,29 @@ const Trainer = {
         })
     })
     .then(response => {
-        console.log('API Response:', response);
-        if (!response.ok) throw new Error('Greška pri ažuriranju statusa uplate');
+        if (!response.ok) {
+            console.error('Server response:', response.status, response.statusText);
+            throw new Error('Greška pri ažuriranju statusa uplate');
+        }
         return response.json();
     })
     .then(updatedClient => {
-        console.log('Updated Client:', updatedClient);
         Utils.hideLoading();
+        // Update the local client object
+        Object.assign(client, updatedClient);
         Utils.showAlert(`Status uplate uspešno ažuriran na ${updatedClient.has_paid ? 'potvrđeno' : 'čekanje'}.`, 'success');
-        this.showClientDetails(updatedClient);
+        this.showClientDetails(client);
         
-        // If payment is confirmed, set expiration after 31 days
         if (updatedClient.has_paid) {
             setTimeout(() => {
                 this.setPaymentExpired(updatedClient.id);
-            }, 31 * 24 * 60 * 60 * 1000); // 31 days in milliseconds
+            }, 31 * 24 * 60 * 60 * 1000);
         }
     })
     .catch(error => {
         console.error('Greška:', error);
         Utils.hideLoading();
-        App.handleApiError(error);
+        Utils.showAlert('Greška pri ažuriranju statusa uplate. Pokušajte ponovo.', 'error');
     });
 },
     
