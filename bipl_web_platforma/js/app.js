@@ -7,6 +7,7 @@ const App = {
     authToken: null,
     currentScreen: null,
     previousScreens: [],
+     isNavigatingBack: false, // Flag za praćenje vraćanja
     
     init: function() {
         // Koristi samo 'bipl_user' i 'bipl_auth_token' kao ključeve
@@ -28,6 +29,7 @@ const App = {
         }
         this.initEventListeners();
     },
+    
     
     initEventListeners: function() {
         // Login form
@@ -238,24 +240,30 @@ const App = {
             Utils.showAlert('Funkcionalnost za pregled napretka klijenta će biti dodata u narednoj verziji.', 'info');
         });
     },
-    
-    showScreen: function(screenId) {
-        // Save current screen to history before changing
-        if (this.currentScreen && screenId !== 'login-screen') {
-            this.previousScreens.push(this.currentScreen);
-        }
+  showScreen: function(screenId) {
+    console.log('Navigating to screen:', screenId);
+    console.log('Previous screens before update:', this.previousScreens);
 
-        // Hide ALL screens first
-        document.querySelectorAll('.screen').forEach(screen => {
-            screen.classList.remove('active');
-        });
-        
-        // Show new screen
-        const newEl = document.getElementById(screenId);
-        if (newEl) {
-            newEl.classList.add('active');
-            this.currentScreen = screenId;
-        }
+    if (screenId === this.currentScreen) {
+        console.log('Already on this screen, no action taken.');
+        return; // Ako je korisnik već na ovom ekranu, ne radi ništa
+    }
+
+    if (!this.isNavigatingBack && this.currentScreen) {
+        this.previousScreens.push(this.currentScreen); // Dodaj trenutni ekran u istoriju samo ako nije vraćanje
+    }
+
+    console.log('Previous screens after update:', this.previousScreens);
+
+    document.querySelectorAll('.screen').forEach(screen => {
+        screen.classList.remove('active');
+    });
+
+    const newEl = document.getElementById(screenId);
+    if (newEl) {
+        newEl.classList.add('active');
+        this.currentScreen = screenId;
+    }
         
         // Handle bottom navigation
         const allBottomNavs = document.querySelectorAll('.bottom-nav');
@@ -294,12 +302,28 @@ const App = {
         }
     },
 
-    goBack: function() {
-        if (this.previousScreens && this.previousScreens.length > 0) {
-            const prevScreen = this.previousScreens.pop();
-            this.showScreen(prevScreen);
-        }
-    },
+goBack: function() {
+    console.log('Going back. Previous screens:', this.previousScreens);
+
+    if (this.previousScreens.length > 0) {
+        const prevScreen = this.previousScreens.pop();
+        console.log('Navigating to previous screen:', prevScreen);
+        this.isNavigatingBack = true; // Postavi flag na true
+        this.showScreen(prevScreen);
+        this.isNavigatingBack = false; // Resetuj flag nakon navigacije
+    } else {
+        // Ako nema prethodnih ekrana, vrati na dashboard
+        const defaultScreen = this.currentUser && this.currentUser.role === 'client' 
+            ? 'client-dashboard' 
+            : 'trainer-dashboard';
+        console.log('No previous screens, navigating to default screen:', defaultScreen);
+        this.showScreen(defaultScreen);
+    }
+},
+    resetNavigationHistory: function(targetScreen) {
+    this.previousScreens = []; // Resetuje istoriju
+    window.history.pushState({}, '', `#${targetScreen}`); // Ažurira URL
+},
 
     checkAuth: function() {
         Utils.showLoading('Proveravanje autentifikacije...');
