@@ -821,6 +821,12 @@ h2 {
     background-color: var(--card-color);
     border-radius: 10px;
     padding: 20px;
+    margin-top: 20px;
+}
+
+#client-nutrition > button.btn-primary {
+    margin-top: 20px;
+    margin-bottom: 20px;
 }
 
 .meals-list {
@@ -1241,7 +1247,8 @@ h2 {
 /* Responsive Styles */
 @media (max-width: 768px) {
     .client-menu, .trainer-menu {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
     }
     
     .nutrition-summary, .stats-cards {
