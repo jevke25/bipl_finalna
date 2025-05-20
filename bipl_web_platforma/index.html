@@ -157,6 +157,7 @@
             </div>
             <div class="container">
                 <h2>Dobrodošli, <span id="client-name"></span></h2>
+                <p id="client-membership-expiry-dashboard" class="membership-expiry"></p>
                 <div class="client-menu">
                     <div class="menu-item" data-section="training">
                         <i class="fas fa-dumbbell"></i>
@@ -182,6 +183,7 @@
                         <i class="fas fa-utensils"></i>
                         <span>Praćenje ishrane</span>
                     </div>
+                    
                 </div>
             </div>
             
@@ -321,6 +323,7 @@
                         <div class="progress-value">0g</div>
                     </div>
                 </div>
+                
                 <div class="add-food-container">
                     <h3>Dodaj obrok</h3>
                     <div class="search-container">
@@ -343,9 +346,10 @@
                     <div class="meals-list">
                         <!-- Obroci će biti dinamički dodati -->
                     </div>
+                    
                 </div>
             </div>
-            
+            <button class="btn-primary" onclick="App.showScreen('client-add-food')">Dodaj svoju hranu</button>
         </div>
 
         <!-- Client Profile Section -->
@@ -413,6 +417,14 @@
                     <div class="menu-item" data-section="stats">
                         <i class="fas fa-chart-pie"></i>
                         <span>Statistika</span>
+                    </div>
+                    <div class="menu-item" data-section="pending-foods">
+                        <i class="fas fa-utensils"></i>
+                        <span>Hrana za odobravanje</span>
+                    </div>
+                    <div class="menu-item" data-section="add-food">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>Dodaj novu hranu</span>
                     </div>
                 </div>
             </div>
@@ -484,6 +496,12 @@
                             <span class="info-value" id="client-detail-health"></span>
                         </div>
                     </div>
+                    <div class="membership-expiry-container">
+        <label for="membership-expiry" class="styled-label">Datum isteka članarine:</label>
+        <input type="date" id="membership-expiry" class="styled-input" />
+        <button id="save-membership-expiry" class="styled-button">Sačuvaj datum</button>
+    </div>
+</div>
                     <div class="client-actions">
                         <button id="confirm-payment" class="btn-primary">Potvrdi Uplatu</button>
                         <button id="add-training" class="btn-primary">Dodaj Trening</button>
@@ -637,6 +655,103 @@
                 </div>
             </div>
             
+        </div>
+
+        <!-- Trainer Pending Foods Section -->
+        <div id="trainer-pending-foods" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Hrana za odobravanje</h2>
+                <div class="pending-food-list">
+                    <!-- Lista hrane će biti dinamički popunjena -->
+                </div>
+                <!-- Dugmad za prelazak na dodavanje nove hrane od strane trenera, ako je potrebno -->
+                <!-- <button onclick="Trainer.showSection('add-food')">Dodaj novu hranu (Trener)</button> -->
+            </div>
+        </div>
+
+        <!-- Trainer Add Food Section -->
+        <div id="trainer-add-food" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Dodaj novu hranu</h2>
+                <form id="trainer-food-form">
+                    <div class="form-group">
+                        <label for="trainer-food-name">Naziv hrane:</label>
+                        <input type="text" id="trainer-food-name" placeholder="Unesite naziv hrane" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trainer-food-calories">Kalorije (kcal):</label>
+                        <input type="number" id="trainer-food-calories" placeholder="Unesite kalorije na 100g" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trainer-food-protein">Proteini (g):</label>
+                        <input type="number" id="trainer-food-protein" placeholder="Unesite proteine na 100g" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trainer-food-carbs">Ugljeni hidrati (g):</label>
+                        <input type="number" id="trainer-food-carbs" placeholder="Unesite ugljene hidrate na 100g" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trainer-food-fat">Masti (g):</label>
+                        <input type="number" id="trainer-food-fat" placeholder="Unesite masti na 100g" required />
+                    </div>
+
+                    <button type="submit" class="btn-primary">Sačuvaj hranu</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Client Add Food Section -->
+        <div id="client-add-food" class="screen">
+            <div class="header">
+                <i class="fas fa-arrow-left back-btn"></i>
+                <img src="images/logo.png" alt="BIPL Logo" class="logo">
+                <div class="logout-btn"><i class="fas fa-sign-out-alt"></i></div>
+            </div>
+            <div class="container">
+                <h2>Dodaj hranu</h2>
+                <form id="food-form">
+                    <div class="form-group">
+                        <label for="food-name">Naziv hrane:</label>
+                        <input type="text" id="food-name" placeholder="Unesite naziv hrane" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="food-calories">Kalorije (kcal):</label>
+                        <input type="number" id="food-calories" placeholder="Unesite kalorije na 100g" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="food-protein">Proteini (g):</label>
+                        <input type="number" id="food-protein" placeholder="Unesite proteine na 100g" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="food-carbs">Ugljeni hidrati (g):</label>
+                        <input type="number" id="food-carbs" placeholder="Unesite ugljene hidrate na 100g" required />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="food-fat">Masti (g):</label>
+                        <input type="number" id="food-fat" placeholder="Unesite masti na 100g" required />
+                    </div>
+
+                    <button type="submit" class="btn-primary">Sačuvaj hranu</button>
+                </form>
+            </div>
         </div>
     </div>
 

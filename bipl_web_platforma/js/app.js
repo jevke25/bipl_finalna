@@ -240,67 +240,76 @@ const App = {
             Utils.showAlert('Funkcionalnost za pregled napretka klijenta će biti dodata u narednoj verziji.', 'info');
         });
     },
-  showScreen: function(screenId) {
+ showScreen: function(screenId) {
     console.log('Navigating to screen:', screenId);
     console.log('Previous screens before update:', this.previousScreens);
 
+    // Ako je korisnik već na ovom ekranu, ne radi ništa
     if (screenId === this.currentScreen) {
         console.log('Already on this screen, no action taken.');
-        return; // Ako je korisnik već na ovom ekranu, ne radi ništa
+        return;
     }
 
+    // Dodaj trenutni ekran u istoriju ako nije vraćanje unazad
     if (!this.isNavigatingBack && this.currentScreen) {
-        this.previousScreens.push(this.currentScreen); // Dodaj trenutni ekran u istoriju samo ako nije vraćanje
+        this.previousScreens.push(this.currentScreen);
     }
 
     console.log('Previous screens after update:', this.previousScreens);
 
+    // Sakrij sve ekrane
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
+       screen.style.display = 'none'; // Sakrij ekran
     });
 
+    // Prikaži traženi ekran
     const newEl = document.getElementById(screenId);
     if (newEl) {
         newEl.classList.add('active');
+        newEl.style.display = 'block'; // Prikaži ekran
         this.currentScreen = screenId;
+    } else {
+        console.error(`Ekran sa ID-jem "${screenId}" nije pronađen.`);
+        return;
     }
-        
-        // Handle bottom navigation
-        const allBottomNavs = document.querySelectorAll('.bottom-nav');
-        allBottomNavs.forEach(nav => nav.style.display = 'none');
-        
-        const showBottomBarScreens = [
-            'client-dashboard', 'client-profile', 'client-training', 
-            'client-measurements', 'client-progress', 'client-nutrition',
-            'trainer-dashboard', 'trainer-profile', 'trainer-clients', 
-            'trainer-client-details', 'trainer-add-training', 
-            'trainer-exercises', 'trainer-add-exercise', 'trainer-stats'
-        ];
-        
-        if (showBottomBarScreens.includes(screenId)) {
-            const nav = document.querySelector(`#${screenId} .bottom-nav`);
-            if (nav) nav.style.display = '';
-        }
 
-        // Load data immediately when showing screens
-        if (this.currentUser) {
-            if (screenId === 'client-dashboard') {
-                const el = document.getElementById('client-name');
-                if (el) el.textContent = this.currentUser.Ime_prezime || '-';
-                if (typeof Client !== 'undefined' && Client.loadProfile) {
-                    Client.loadProfile();
-                }
-            } else if (screenId === 'trainer-dashboard') {
-                const el1 = document.getElementById('trainer-profile-name');
-                const el2 = document.getElementById('trainer-profile-email');
-                if (el1) el1.textContent = this.currentUser.Ime_prezime || '-';
-                if (el2) el2.textContent = this.currentUser.email || '-';
-                if (typeof Trainer !== 'undefined' && Trainer.loadStats) {
-                    Trainer.loadStats();
-                }
+    // Upravljanje navigacijom na dnu (ako postoji)
+    const allBottomNavs = document.querySelectorAll('.bottom-nav');
+    allBottomNavs.forEach(nav => nav.style.display = 'none');
+
+    const showBottomBarScreens = [
+        'client-dashboard', 'client-profile', 'client-training', 
+        'client-measurements', 'client-progress', 'client-nutrition',
+        'trainer-dashboard', 'trainer-profile', 'trainer-clients', 
+        'trainer-client-details', 'trainer-add-training', 
+        'trainer-exercises', 'trainer-add-exercise', 'trainer-stats'
+    ];
+
+    if (showBottomBarScreens.includes(screenId)) {
+        const nav = document.querySelector(`#${screenId} .bottom-nav`);
+        if (nav) nav.style.display = '';
+    }
+
+    // Učitaj podatke za određene ekrane
+    if (this.currentUser) {
+        if (screenId === 'client-dashboard') {
+            const el = document.getElementById('client-name');
+            if (el) el.textContent = this.currentUser.Ime_prezime || '-';
+            if (typeof Client !== 'undefined' && Client.loadProfile) {
+                Client.loadProfile();
+            }
+        } else if (screenId === 'trainer-dashboard') {
+            const el1 = document.getElementById('trainer-profile-name');
+            const el2 = document.getElementById('trainer-profile-email');
+            if (el1) el1.textContent = this.currentUser.Ime_prezime || '-';
+            if (el2) el2.textContent = this.currentUser.email || '-';
+            if (typeof Trainer !== 'undefined' && Trainer.loadStats) {
+                Trainer.loadStats();
             }
         }
-    },
+    }
+},
 
 goBack: function() {
     console.log('Going back. Previous screens:', this.previousScreens);
@@ -349,6 +358,11 @@ goBack: function() {
             // Show appropriate screen based on role
             const screenId = data.role === 'client' ? 'client-dashboard' : 'trainer-dashboard';
             this.showScreen(screenId);
+            
+            // Inicijalizuj klijentske event listenere ako je korisnik klijent
+            if (data.role === 'client' && typeof Client !== 'undefined' && Client.initClientEventListeners) {
+                Client.initClientEventListeners();
+            }
             
             Utils.hideLoading();
         })

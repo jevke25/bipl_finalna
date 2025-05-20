@@ -24,6 +24,16 @@ const Trainer = {
             this.loadStats();
             App.resetNavigationHistory('trainer-stats'); // Resetovanje istorije
             break;
+        case 'pending-foods':
+            App.showScreen('trainer-pending-foods');
+            this.loadPendingFoods(); // Funkcija koju ćemo implementirati
+            App.resetNavigationHistory('trainer-pending-foods'); // Resetovanje istorije
+            break;
+        case 'add-food':
+            App.showScreen('trainer-add-food');
+            // Nema posebne load funkcije, forma je u HTML-u
+            App.resetNavigationHistory('trainer-add-food'); // Resetovanje istorije
+            break;
         default:
             console.log('Nepoznata sekcija:', section);
     }
@@ -179,7 +189,21 @@ filterExercisesByGroup: function(group) {
         const trainingStatus = document.getElementById('client-training-status');
         trainingStatus.textContent = client.has_Training ? 'Trening dostupan' : 'Čeka se trening';
         trainingStatus.className = client.has_Training ? 'training-status' : 'training-status pending';
-        
+         const expiryInput = document.getElementById('membership-expiry');
+    if (expiryInput) {
+        expiryInput.value = client.membership_expiry || ''; // Postavite vrednost ako postoji
+    }
+    const membershipExpiryElement = document.getElementById('client-membership-expiry');
+    if (membershipExpiryElement) {
+        membershipExpiryElement.textContent = client.membership_expiry 
+            ? `Članarina važi do: ${new Date(client.membership_expiry).toLocaleDateString('sr-RS')}`
+            : 'Članarina nije postavljena';
+    }
+
+    const saveExpiryBtn = document.getElementById('save-membership-expiry');
+    if (saveExpiryBtn) {
+        saveExpiryBtn.onclick = () => this.saveMembershipExpiry(client);
+    }
         // Update buttons based on client status
         const confirmPaymentBtn = document.getElementById('confirm-payment');
         const addTrainingBtn = document.getElementById('add-training');
@@ -194,7 +218,43 @@ filterExercisesByGroup: function(group) {
         confirmPaymentBtn.onclick = () => this.togglePaymentStatus(client);
         addTrainingBtn.onclick = () => this.showAddTrainingScreen(client);
     },
-    
+    saveMembershipExpiry: function(client) {
+    const expiryInput = document.getElementById('membership-expiry');
+    if (!expiryInput || !expiryInput.value) {
+        Utils.showAlert('Molimo izaberite datum isteka članarine.', 'error');
+        return;
+    }
+
+    const expiryDate = expiryInput.value;
+
+    Utils.showLoading('Čuvanje datuma isteka članarine...');
+    fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/user/${client.id}`, {
+        method: 'PATCH',
+        headers: {
+            'Authorization': `Bearer ${App.authToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            membership_expiry: expiryDate
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Greška pri čuvanju datuma isteka članarine.');
+        }
+        return response.json();
+    })
+    .then(updatedClient => {
+        Utils.hideLoading();
+        Utils.showAlert('Datum isteka članarine uspešno sačuvan!', 'success');
+        this.showClientDetails(updatedClient); // Ažurirajte prikaz detalja klijenta
+    })
+    .catch(error => {
+        console.error('Greška:', error);
+        Utils.hideLoading();
+        Utils.showAlert('Došlo je do greške. Pokušajte ponovo.', 'error');
+    });
+},
   togglePaymentStatus: function(client) {
     Utils.showLoading('Ažuriranje statusa uplate...');
     
@@ -719,11 +779,206 @@ filterExercisesByGroup: function(group) {
         
         document.getElementById('trainer-profile-name').textContent = user.Ime_prezime || '-';
         document.getElementById('trainer-profile-email').textContent = user.email || '-';
-    }
+    },
+    loadPendingFoods: function() {
+        Utils.showLoading('Učitavanje hrane za odobrenje...');
+
+        // Dohvati sve namirnice i filtriraj na frontendu za neodobrene (is_approved: false)
+        const apiUrl = 'https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods'; // Koristimo generički API za hranu
+
+        fetch(apiUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${App.authToken}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Greška pri učitavanju hrane za odobrenje');
+            return response.json();
+        })
+        .then(data => {
+            console.log('Sve namirnice sa API-ja (za trenera):', data);
+
+            // Filtriraj samo neodobrene namirnice na frontendu
+            const pendingFoods = data.filter(food => food.is_approved === false);
+
+            console.log('Neodobrene namirnice:', pendingFoods);
+
+            const container = document.querySelector('.pending-food-list');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (pendingFoods.length === 0) {
+                container.innerHTML = '<p>Trenutno nema namirnica za odobrenje.</p>';
+                Utils.hideLoading();
+                return;
+            }
+
+            pendingFoods.forEach(food => {
+                const item = document.createElement('div');
+                item.className = 'pending-food-item';
+                item.innerHTML = `
+                    <div class="pending-food-info">
+                        <h4>${food.name}</h4>
+                        <p>${food.calories} kcal • ${food.protein}g proteina • ${food.carbs}g UH • ${food.fat}g masti</p>
+                        <p>Poslao: ${food.user_id || 'N/A'}</p> <!-- Ako Xano ruta vraca i info o korisniku -->
+                    </div>
+                    <div class="pending-food-actions">
+                        <button class="btn-primary btn-approve-food" data-id="${food.id}">Odobri</button>
+                        <button class="btn-secondary btn-reject-food" data-id="${food.id}">Odbij</button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+
+            // Dodaj event listenere za dugmad za odobravanje/odbijanje
+            document.querySelectorAll('.btn-approve-food').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const foodId = e.target.getAttribute('data-id');
+                    this.approveFood(foodId); // Funkcija koju ćemo implementirati
+                });
+            });
+
+            document.querySelectorAll('.btn-reject-food').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const foodId = e.target.getAttribute('data-id');
+                    this.rejectFood(foodId); // Funkcija koju ćemo implementirati (npr. brisanje)
+                });
+            });
+
+            Utils.hideLoading();
+        })
+        .catch(error => {
+            console.error('Greška pri učitavanju hrane za odobrenje:', error);
+            Utils.hideLoading();
+            App.handleApiError(error);
+        });
+    },
+    approveFood: function(foodId) {
+        Utils.showLoading('Odobravanje namirnice...');
+
+        // Šaljemo PATCH/PUT zahtev na generički /foods/{id} endpoint da promenimo is_approved status
+        const apiUrl = `https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods/${foodId}`; // Koristimo generički API za hranu sa ID-jem
+
+        fetch(apiUrl, {
+            method: 'PATCH', // Pretpostavljamo PATCH za delimično ažuriranje
+            headers: {
+                'Authorization': `Bearer ${App.authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                is_approved: true
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Greška pri odobravanju namirnice');
+            return response.json();
+        })
+        .then(() => {
+            Utils.hideLoading();
+            Utils.showAlert('Namirnica uspešno odobrena!', 'success');
+            this.loadPendingFoods(); // Ponovo učitaj listu
+        })
+        .catch(error => {
+            console.error('Greška pri odobravanju namirnice:', error);
+            Utils.hideLoading();
+            App.handleApiError(error);
+        });
+    },
+    rejectFood: function(foodId) {
+        if (!confirm('Da li ste sigurni da želite da odbijete (obrišete) ovu namirnicu?')) {
+            return;
+        }
+        Utils.showLoading('Odbijanje namirnice...');
+
+        // Šaljemo DELETE zahtev na generički /foods/{id} endpoint
+        const apiUrl = `https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods/${foodId}`; // Koristimo generički API za hranu sa ID-jem
+
+        fetch(apiUrl, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${App.authToken}`,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Greška pri odbijanju namirnice');
+            // DELETE zahtev obično ne vraća body, samo status 200/204
+            return {}; // Vrati prazan objekat da ne bi puklo .then(data => ...)
+        })
+        .then(() => {
+            Utils.hideLoading();
+            Utils.showAlert('Namirnica uspešno odbijena!', 'success');
+            this.loadPendingFoods(); // Ponovo učitaj listu
+        })
+        .catch(error => {
+            console.error('Greška pri odbijanju namirnice:', error);
+            Utils.hideLoading();
+            App.handleApiError(error);
+        });
+    },
+    addTrainerFood: function(formData) {
+        Utils.showLoading('Dodavanje nove namirnice...');
+
+        // Šaljemo POST zahtev na generički /foods endpoint i postavljamo is_approved na true
+        const apiUrl = 'https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods'; // Koristimo generički API za hranu
+
+        fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${App.authToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                ...formData,
+                is_approved: true // Hrana koju trener doda je odmah odobrena
+            })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Greška pri dodavanju namirnice');
+            return response.json();
+        })
+        .then(() => {
+            Utils.hideLoading();
+            Utils.showAlert('Nova namirnica uspešno dodata!', 'success');
+            document.getElementById('trainer-food-form').reset(); // Resetuj formu trenera
+            App.showScreen('trainer-exercises'); // Primer: vrati trenera na neki podrazumevani ekran ili listu hrane
+        })
+        .catch(error => {
+            console.error('Greška pri dodavanju namirnice:', error);
+            Utils.hideLoading();
+            App.handleApiError(error);
+        });
+    },
 };
 
 // Set up event listeners for trainer-specific forms
 document.addEventListener('DOMContentLoaded', function() {
+    // Event Listener za formu za dodavanje nove hrane od strane trenera
+    const trainerFoodForm = document.getElementById('trainer-food-form');
+    if (trainerFoodForm) {
+        trainerFoodForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const formData = {
+                name: document.getElementById('trainer-food-name').value,
+                calories: parseFloat(document.getElementById('trainer-food-calories').value),
+                protein: parseFloat(document.getElementById('trainer-food-protein').value),
+                carbs: parseFloat(document.getElementById('trainer-food-carbs').value),
+                fat: parseFloat(document.getElementById('trainer-food-fat').value),
+                // is_approved je true na backendu
+            };
+            
+            // Provera validnosti (opciono, ali preporučljivo)
+            if (!formData.name || isNaN(formData.calories) || isNaN(formData.protein) || isNaN(formData.carbs) || isNaN(formData.fat)) {
+                Utils.showAlert('Molimo popunite sva polja ispravno.', 'error');
+                return;
+            }
+
+            Trainer.addTrainerFood(formData);
+        });
+    }
+
     // Exercise search
     document.getElementById('search-exercise')?.addEventListener('click', function() {
         Trainer.searchExercises();

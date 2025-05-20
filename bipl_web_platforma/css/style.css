@@ -47,22 +47,67 @@ footer {
 }
 
 .screen {
+    display: none; /* Svi ekrani su sakriveni po default-u */
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     background-color: var(--background-color);
-    transition: transform 0.3s ease-in-out;
-    transform: translateX(100%);
     overflow-y: auto;
     padding-bottom: 80px;
 }
 
 .screen.active {
-    transform: translateX(0);
+    display: block; /* Prikaži samo aktivni ekran */
+    transform: translateX(0); /* Animacija za prikaz */
+}
+.membership-expiry-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
+.styled-label {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #eb8d00;
+}
+
+.styled-input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1.5px solid #eb8d00;
+    font-size: 1.1em;
+    background: #fff8f0;
+    color: #eb8d00;
+    font-weight: bold;
+}
+.membership-expiry {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #eb8d00;
+    margin-top: 10px;
+}
+
+.styled-button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #eb8d00;
+    color: #fff;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+
+.styled-button:hover {
+    background: #d97700;
+}
 /* Header Styles */
 .header {
     display: flex;
@@ -156,6 +201,52 @@ h2 {
     cursor: pointer;
     transition: all 0.3s;
     margin-top: 10px;
+}
+#food-form-screen {
+    display: none;
+    padding: 20px;
+    background: #fff8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#food-form-screen h2 {
+    color: #eb8d00;
+    margin-bottom: 20px;
+}
+
+#food-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #eb8d00;
+}
+
+#food-form input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1.5px solid #eb8d00;
+    border-radius: 8px;
+    font-size: 1em;
+    background: #fff;
+    color: #333;
+}
+
+#food-form button {
+    width: 100%;
+    padding: 10px;
+    background: #eb8d00;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#food-form button:hover {
+    background: #d97700;
 }
 
 .btn-understand:hover {

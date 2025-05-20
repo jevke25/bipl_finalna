@@ -334,6 +334,26 @@ const Client = {
     
     const elStatus = document.getElementById('profile-status');
     if (elStatus) elStatus.textContent = status;
+
+    // Update membership expiry date on dashboard
+    const expiryElement = document.getElementById('client-membership-expiry-dashboard');
+    if (expiryElement) {
+        if (user.membership_expiry) {
+            const expiryDate = new Date(user.membership_expiry);
+            // Provera da li je datum validan
+            if (!isNaN(expiryDate.getTime())) {
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                expiryElement.textContent = `Članarina ističe: ${expiryDate.toLocaleDateString('sr-RS', options)}`;
+                expiryElement.style.color = '#eb7d00'; // Postavite boju koja odgovara stilu
+            } else {
+                expiryElement.textContent = 'Datum isteka članarine nije validan.';
+                expiryElement.style.color = 'red';
+            }
+        } else {
+            expiryElement.textContent = 'Status članarine nije postavljen.';
+            expiryElement.style.color = 'gray';
+        }
+    }
 },
     
     loadTransformations: function() {
@@ -352,7 +372,10 @@ const Client = {
     searchFood: function(query) {
     Utils.showLoading('Pretraga hrane...');
     
-    fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods?name=${encodeURIComponent(query)}`, {
+    // Dohvati sve namirnice, pa filtriraj na frontendu za klijenta (samo odobrene)
+    const apiUrl = `https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods`; // Koristimo generički API za hranu
+
+    fetch(apiUrl, {
         method: 'GET',
         headers: {
             'Authorization': `Bearer ${App.authToken}`,
@@ -364,17 +387,26 @@ const Client = {
         return response.json();
     })
     .then(data => {
-        console.log('Rezultati pretrage hrane:', data); // Proverite API odgovor
+        console.log('Sve namirnice sa API-ja:', data); // Proverite API odgovor
+        
+        // Filtriraj samo odobrene namirnice za klijenta i primeni pretragu po imenu
+        const filteredData = data.filter(food => 
+            food.is_approved === true && 
+            food.name.toLowerCase().includes(query.toLowerCase())
+        );
+        
+        console.log('Filtrirani i pretraženi rezultati za klijenta:', filteredData);
+        
         const container = document.querySelector('.food-results');
         container.innerHTML = '';
         
-        if (data.length === 0) {
+        if (filteredData.length === 0) {
             container.innerHTML = '<p>Nema rezultata za ovu pretragu.</p>';
             Utils.hideLoading();
             return;
         }
         
-        data.forEach(food => {
+        filteredData.forEach(food => {
             const item = document.createElement('div');
             item.className = 'food-item';
             item.innerHTML = `
@@ -398,26 +430,26 @@ const Client = {
     });
 },
     
- addSelectedFood: function(food) {
-    console.log('Dodavanje hrane:', food); // Proverite da li `id` postoji
+    addSelectedFood: function(food) {
+        console.log('Dodavanje hrane:', food); // Proverite da li `id` postoji
 
-    // Proverite da li je hrana već dodata
-    const existingIndex = this.selectedFoods.findIndex(f => f.id === food.id);
-    if (existingIndex >= 0) {
-        Utils.showAlert('Namirnica je već dodata!', 'warning');
-        return;
-    }
+        // Proverite da li je hrana već dodata
+        const existingIndex = this.selectedFoods.findIndex(f => f.id === food.id);
+        if (existingIndex >= 0) {
+            Utils.showAlert('Namirnica je već dodata!', 'warning');
+            return;
+        }
 
-    this.selectedFoods.push({
-        ...food,
-        quantity: 1
-    });
+        this.selectedFoods.push({
+            ...food,
+            quantity: 1
+        });
 
-    console.log('Ažurirana lista odabranih namirnica:', this.selectedFoods); // Proverite ažuriranu listu
+        console.log('Ažurirana lista odabranih namirnica:', this.selectedFoods); // Proverite ažuriranu listu
 
-    this.updateSelectedFoodsList();
-    Utils.showAlert('Namirnica uspešno dodata!', 'success');
-},
+        this.updateSelectedFoodsList();
+        Utils.showAlert('Namirnica uspešno dodata!', 'success');
+    },
     updateSelectedFoodsList: function() {
         const container = document.querySelector('.selected-list');
         if (!container) return;
@@ -455,6 +487,7 @@ const Client = {
                 }
             });
         });
+        
         // Add event listeners to remove buttons
         document.querySelectorAll('.remove-food').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -465,95 +498,168 @@ const Client = {
         });
     },
     
-   saveMeal: function() {
-    if (!this.selectedFoods || this.selectedFoods.length === 0) {
-        Utils.showAlert('Morate odabrati barem jednu namirnicu.', 'error');
-        return;
-    }
-    if (this.selectedFoods.some(f => f.quantity <= 0)) {
-        Utils.showAlert('Količina svake namirnice mora biti veća od 0!', 'error');
-        return;
-    }
-    Utils.showLoading('Čuvanje obroka...');
-    const date = this.formatDate(this.currentNutritionDate);
-    const entries = this.selectedFoods.map(food => ({
-        foods_id: food.id, // Promenjen ključ u foods_id
-        quantity: food.quantity,
-        date: date
-    }));
+    saveMeal: function() {
+        if (!this.selectedFoods || this.selectedFoods.length === 0) {
+            Utils.showAlert('Morate odabrati barem jednu namirnicu.', 'error');
+            return;
+        }
+        if (this.selectedFoods.some(f => f.quantity <= 0)) {
+            Utils.showAlert('Količina svake namirnice mora biti veća od 0!', 'error');
+            return;
+        }
+        Utils.showLoading('Čuvanje obroka...');
+        const date = this.formatDate(this.currentNutritionDate);
+        const entries = this.selectedFoods.map(food => ({
+            foods_id: food.id, // Promenjen ključ u foods_id
+            quantity: food.quantity,
+            date: date
+        }));
 
-    console.log('Unosi za čuvanje:', entries); // Proverite podatke pre slanja
+        console.log('Unosi za čuvanje:', entries); // Proverite podatke pre slanja
 
-    const promises = entries.map(entry => {
-        return fetch('https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/food_entries', {
+        const promises = entries.map(entry => {
+            return fetch('https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/food_entries', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${App.authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ...entry,
+                    user_id: App.currentUser.id
+                })
+            });
+        });
+
+        Promise.all(promises)
+        .then(() => {
+            this.selectedFoods = [];
+            this.updateSelectedFoodsList();
+            const foodSearch = document.getElementById('food-search');
+            if (foodSearch) foodSearch.value = '';
+            const foodResults = document.querySelector('.food-results');
+            if (foodResults) foodResults.innerHTML = '';
+            this.loadNutritionData();
+            Utils.hideLoading();
+            Utils.showAlert('Obrok uspešno sačuvan!', 'success');
+        })
+        .catch(error => {
+            Utils.hideLoading();
+            let msg = 'Došlo je do greške. Molimo pokušajte ponovo.';
+            if (error && error.message) msg = error.message;
+            Utils.showAlert(msg, 'error');
+        });
+    },
+
+    // Funkcija za dodavanje nove hrane od strane klijenta
+    addClientFood: function(formData) {
+        Utils.showLoading('Dodavanje hrane za odobrenje...');
+
+        // Koristimo generički /foods endpoint i postavljamo is_approved na false
+        const apiUrl = 'https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods'; // Koristimo generički API za hranu
+
+        console.log('Attempting to add client food. API URL:', apiUrl);
+        console.log('Data being sent:', formData);
+
+        fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${App.authToken}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                ...entry,
-                user_id: App.currentUser.id
+                ...formData,
+                user_id: App.currentUser.id, // Dodajemo ID klijenta koji šalje
+                is_approved: false
             })
+        })
+        .then(response => {
+            console.log('Fetch response received:', response);
+            if (!response.ok) throw new Error('Greška pri slanju hrane na odobrenje');
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            Utils.hideLoading();
+            Utils.showAlert('Hrana je poslata na odobrenje kod trenera!', 'success');
+            document.getElementById('food-form').reset(); // Resetuj formu
+            App.goBack(); // Vrati se na prethodni ekran (Nutrition Section)
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            console.error('Greška pri slanju hrane za odobrenje:', error);
+            Utils.hideLoading();
+            App.handleApiError(error);
         });
-    });
+    },
 
-    Promise.all(promises)
-    .then(() => {
-        this.selectedFoods = [];
-        this.updateSelectedFoodsList();
-        const foodSearch = document.getElementById('food-search');
-        if (foodSearch) foodSearch.value = '';
-        const foodResults = document.querySelector('.food-results');
-        if (foodResults) foodResults.innerHTML = '';
-        this.loadNutritionData();
-        Utils.hideLoading();
-        Utils.showAlert('Obrok uspešno sačuvan!', 'success');
-    })
-    .catch(error => {
-        Utils.hideLoading();
-        let msg = 'Došlo je do greške. Molimo pokušajte ponovo.';
-        if (error && error.message) msg = error.message;
-        Utils.showAlert(msg, 'error');
-    });
-},
-    
-   loadNutritionData: function() {
-    Utils.showLoading('Učitavanje podataka o ishrani...');
-    
-    // Ažurirajte prikaz trenutnog datuma
-    const currentDateElement = document.querySelector('.current-date');
-    if (currentDateElement) {
-        currentDateElement.textContent = this.formatDateForDisplay(this.currentNutritionDate);
-    }
+    // Inicijalizacija Event Listeners-a specifičnih za klijenta
+    initClientEventListeners: function() {
+         // Event Listener za formu za dodavanje nove hrane
+        const foodForm = document.getElementById('food-form');
+        if (foodForm) {
+            foodForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const formData = {
+                    name: document.getElementById('food-name').value,
+                    calories: parseFloat(document.getElementById('food-calories').value),
+                    protein: parseFloat(document.getElementById('food-protein').value),
+                    carbs: parseFloat(document.getElementById('food-carbs').value),
+                    fat: parseFloat(document.getElementById('food-fat').value),
+                    // is_approved će biti postavljen na false na backendu
+                };
+                
+                // Provera validnosti (opciono, ali preporučljivo)
+                if (!formData.name || isNaN(formData.calories) || isNaN(formData.protein) || isNaN(formData.carbs) || isNaN(formData.fat)) {
+                    Utils.showAlert('Molimo popunite sva polja ispravno.', 'error');
+                    return;
+                }
 
-    fetch('https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/food_entries', {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${App.authToken}`,
-            'Content-Type': 'application/json'
+                this.addClientFood(formData);
+            });
         }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Greška pri učitavanju podataka o ishrani.');
+
+        // Postojeći listeneri...
+        // Nutrition search (primer kako bi trebalo da proverava is_approved: true)
+        // document.getElementById('search-food').addEventListener('click', function() {
+        //     const query = document.getElementById('food-search').value;
+        //     if (query.length > 2) {
+        //         Client.searchFood(query);
+        //     }
+        // });
+        
+        // Save meal
+        document.getElementById('save-meal').addEventListener('click', function() {
+            Client.saveMeal();
+        });
+        
+        // Nutrition date navigation
+        document.querySelector('.prev-day').addEventListener('click', function() {
+            Client.changeNutritionDate(-1);
+        });
+        
+        document.querySelector('.next-day').addEventListener('click', function() {
+            Client.changeNutritionDate(1);
+        });
+        
+        // Edit profile
+        document.getElementById('edit-profile').addEventListener('click', function() {
+            // Implementation for editing profile
+            // This would show a form with current values pre-filled
+            Utils.showAlert('Funkcionalnost za izmenu profila će biti dodata u narednoj verziji.', 'info');
+        });
+    },
+    
+    loadNutritionData: function() {
+        Utils.showLoading('Učitavanje podataka o ishrani...');
+        
+        // Ažurirajte prikaz trenutnog datuma
+        const currentDateElement = document.querySelector('.current-date');
+        if (currentDateElement) {
+            currentDateElement.textContent = this.formatDateForDisplay(this.currentNutritionDate);
         }
-        return response.json();
-    })
-    .then(foodEntries => {
-        console.log('Svi unosi hrane:', foodEntries);
 
-        // Filtriraj unose prema trenutnom korisniku i datumu
-        const date = this.formatDate(this.currentNutritionDate);
-        const userEntries = foodEntries.filter(entry => 
-            entry.user_id === App.currentUser.id && entry.date === date
-        );
-
-        console.log('Filtrirani unosi za korisnika:', userEntries);
-
-        // Dohvati nutritivne vrednosti za sve jedinstvene foods_id
-        const foodIds = [...new Set(userEntries.map(entry => entry.foods_id))];
-        return fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods?ids=${foodIds.join(',')}`, {
+        fetch('https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/food_entries', {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${App.authToken}`,
@@ -562,87 +668,113 @@ const Client = {
         })
         .then(response => {
             if (!response.ok) {
-                throw new Error('Greška pri učitavanju nutritivnih vrednosti.');
+                throw new Error('Greška pri učitavanju podataka o ishrani.');
             }
-            return response.json().then(foodData => ({ foodData, userEntries }));
+            return response.json();
+        })
+        .then(foodEntries => {
+            console.log('Svi unosi hrane:', foodEntries);
+
+            // Filtriraj unose prema trenutnom korisniku i datumu
+            const date = this.formatDate(this.currentNutritionDate);
+            const userEntries = foodEntries.filter(entry => 
+                entry.user_id === App.currentUser.id && entry.date === date
+            );
+
+            console.log('Filtrirani unosi za korisnika:', userEntries);
+
+            // Dohvati nutritivne vrednosti za sve jedinstvene foods_id
+            const foodIds = [...new Set(userEntries.map(entry => entry.foods_id))];
+            return fetch(`https://x8ki-letl-twmt.n7.xano.io/api:-VqLpohl/foods?ids=${foodIds.join(',')}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${App.authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Greška pri učitavanju nutritivnih vrednosti.');
+                }
+                return response.json().then(foodData => ({ foodData, userEntries }));
+            });
+        })
+        .then(({ foodData, userEntries }) => {
+            console.log('Nutritivne vrednosti:', foodData);
+
+            let totalCalories = 0;
+            let totalProtein = 0;
+            let totalCarbs = 0;
+            let totalFat = 0;
+
+            // Mapiraj nutritivne vrednosti po foods_id
+            const foodMap = {};
+            foodData.forEach(food => {
+                foodMap[food.id] = food;
+            });
+
+            // Izračunaj ukupne nutritivne vrednosti
+            userEntries.forEach(entry => {
+                const food = foodMap[entry.foods_id];
+                if (food) {
+                    totalCalories += (food.calories || 0) * (entry.quantity || 1);
+                    totalProtein += (food.protein || 0) * (entry.quantity || 1);
+                    totalCarbs += (food.carbs || 0) * (entry.quantity || 1);
+                    totalFat += (food.fat || 0) * (entry.quantity || 1);
+                }
+            });
+
+            this.updateNutritionSummary({
+                calories: totalCalories,
+                protein: totalProtein,
+                carbs: totalCarbs,
+                fat: totalFat
+            });
+
+            Utils.hideLoading();
+        })
+        .catch(error => {
+            console.error('Greška:', error);
+            Utils.hideLoading();
+            Utils.showAlert('Došlo je do greške prilikom učitavanja podataka o ishrani.', 'error');
         });
-    })
-    .then(({ foodData, userEntries }) => {
-        console.log('Nutritivne vrednosti:', foodData);
-
-        let totalCalories = 0;
-        let totalProtein = 0;
-        let totalCarbs = 0;
-        let totalFat = 0;
-
-        // Mapiraj nutritivne vrednosti po foods_id
-        const foodMap = {};
-        foodData.forEach(food => {
-            foodMap[food.id] = food;
-        });
-
-        // Izračunaj ukupne nutritivne vrednosti
-        userEntries.forEach(entry => {
-            const food = foodMap[entry.foods_id];
-            if (food) {
-                totalCalories += (food.calories || 0) * (entry.quantity || 1);
-                totalProtein += (food.protein || 0) * (entry.quantity || 1);
-                totalCarbs += (food.carbs || 0) * (entry.quantity || 1);
-                totalFat += (food.fat || 0) * (entry.quantity || 1);
-            }
-        });
-
-        this.updateNutritionSummary({
-            calories: totalCalories,
-            protein: totalProtein,
-            carbs: totalCarbs,
-            fat: totalFat
-        });
-
-        Utils.hideLoading();
-    })
-    .catch(error => {
-        console.error('Greška:', error);
-        Utils.hideLoading();
-        Utils.showAlert('Došlo je do greške prilikom učitavanja podataka o ishrani.', 'error');
-    });
-},
+    },
     
     updateNutritionSummary: function({calories = 0, protein = 0, carbs = 0, fat = 0}) {
-    console.log('Ažuriranje nutritivnog sažetka:', {calories, protein, carbs, fat});
+        console.log('Ažuriranje nutritivnog sažetka:', {calories, protein, carbs, fat});
 
-    const calorieGoal = 2500; // Default goal, može se prilagoditi po korisniku
-    const caloriePercent = Math.min(100, (calories / calorieGoal) * 100);
-    
-    const circle = document.querySelector('.progress-circle');
-    if (circle) {
-        circle.style.background = `conic-gradient(var(--primary-color) ${caloriePercent}%, transparent ${caloriePercent}%)`;
-        const progressValue = circle.querySelector('.progress-value');
-        if (progressValue) {
-            progressValue.textContent = Math.round(calories);
+        const calorieGoal = 2500; // Default goal, može se prilagoditi po korisniku
+        const caloriePercent = Math.min(100, (calories / calorieGoal) * 100);
+        
+        const circle = document.querySelector('.progress-circle');
+        if (circle) {
+            circle.style.background = `conic-gradient(var(--primary-color) ${caloriePercent}%, transparent ${caloriePercent}%)`;
+            const progressValue = circle.querySelector('.progress-value');
+            if (progressValue) {
+                progressValue.textContent = Math.round(calories);
+            }
         }
-    }
-    
-    document.querySelectorAll('.summary-card .progress-value').forEach(el => {
-        const parent = el.parentElement.querySelector('h3');
-        if (!parent) return;
+        
+        document.querySelectorAll('.summary-card .progress-value').forEach(el => {
+            const parent = el.parentElement.querySelector('h3');
+            if (!parent) return;
 
-        if (parent.textContent === 'Proteini') {
-            el.textContent = `${protein.toFixed(1)}g`;
-        } else if (parent.textContent === 'Ugljeni hidrati') {
-            el.textContent = `${carbs.toFixed(1)}g`;
-        } else if (parent.textContent === 'Masti') {
-            el.textContent = `${fat.toFixed(1)}g`;
-        }
-    });
-},
+            if (parent.textContent === 'Proteini') {
+                el.textContent = `${protein.toFixed(1)}g`;
+            } else if (parent.textContent === 'Ugljeni hidrati') {
+                el.textContent = `${carbs.toFixed(1)}g`;
+            } else if (parent.textContent === 'Masti') {
+                el.textContent = `${fat.toFixed(1)}g`;
+            }
+        });
+    },
     
-   changeNutritionDate: function(days) {
-    this.currentNutritionDate = new Date(this.currentNutritionDate); // Osigurajte da je ovo instanca Date
-    this.currentNutritionDate.setDate(this.currentNutritionDate.getDate() + days); // Dodajte ili oduzmite dane
-    console.log('Ažurirani datum:', this.currentNutritionDate); // Proverite ažurirani datum
-    this.loadNutritionData(); // Ponovo učitajte podatke za novi datum
-},
+    changeNutritionDate: function(days) {
+        this.currentNutritionDate = new Date(this.currentNutritionDate); // Osigurajte da je ovo instanca Date
+        this.currentNutritionDate.setDate(this.currentNutritionDate.getDate() + days); // Dodajte ili oduzmite dane
+        console.log('Ažurirani datum:', this.currentNutritionDate); // Proverite ažurirani datum
+        this.loadNutritionData(); // Ponovo učitajte podatke za novi datum
+    },
     
     formatDate: function(date) {
         const d = new Date(date);
