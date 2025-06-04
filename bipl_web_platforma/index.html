@@ -246,6 +246,10 @@
                         <label for="measurement-legs">Obim nogu (cm)</label>
                         <input type="number" id="measurement-legs" required>
                     </div>
+                    <div class="form-group">
+                        <label for="measurement-arms">Obim ruku (cm)</label>
+                        <input type="number" id="measurement-arms" required>
+                    </div>
                     <button type="submit" class="btn-primary">Sačuvaj</button>
                 </form>
             </div>
@@ -266,6 +270,7 @@
                     <div class="progress-option" data-type="waist">Struk</div>
                     <div class="progress-option" data-type="shoulders">Ramena</div>
                     <div class="progress-option" data-type="legs">Noge</div>
+                    <div class="progress-option" data-type="arms">Ruke</div>
                 </div>
                 <div class="chart-container">
                     <canvas id="progress-chart"></canvas>
@@ -538,7 +543,7 @@
                 </div>
                 <div class="form-group">
                     <label for="reps-input">Ponavljanja</label>
-                    <input type="number" id="reps-input" min="1" value="12" style="width:80px;">
+                    <input type="text" id="reps-input" value="12" style="width:120px;" placeholder="npr. 12,10,8">
                 </div>
                 <button id="add-exercise-to-list" class="btn-primary" style="margin-bottom:18px;">Dodaj vežbu</button>
                 <div class="selected-list"></div>

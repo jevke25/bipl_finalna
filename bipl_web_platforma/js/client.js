@@ -97,7 +97,8 @@ const Client = {
 
             const fullExercise = {
                 ...exercise,
-                sets: entry.sets,
+                sets: entry.seets ? entry.seets.length : entry.sets,
+                seets: entry.seets || [],
                 repetitions: entry.repetitions
             };
 
@@ -118,10 +119,11 @@ const Client = {
             groups[group].forEach(exercise => {
                 const exerciseElement = document.createElement('div');
                 exerciseElement.className = 'exercise-item';
+                const repsText = (exercise.seets && exercise.seets.length) ? exercise.seets.join('/') : exercise.repetitions;
                 exerciseElement.innerHTML = `
                     <div class="exercise-info">
                         <h5>${exercise.naziv_vezbe}</h5>
-                        <p>${exercise.sets} serija × ${exercise.repetitions} ponavljanja</p>
+                        <p>${exercise.sets} serija × ${repsText} ponavljanja</p>
                     </div>
                     <div class="exercise-actions">
                         <button class="play-btn" data-video="${exercise.video_link}">
@@ -237,6 +239,11 @@ const Client = {
                 case 'legs':
                     values = data.map(item => item.obim_noga);
                     title = 'Obim nogu (cm)';
+                    unit = 'cm';
+                    break;
+                case 'arms':
+                    values = data.map(item => item.obim_ruka);
+                    title = 'Obim ruku (cm)';
                     unit = 'cm';
                     break;
             }
