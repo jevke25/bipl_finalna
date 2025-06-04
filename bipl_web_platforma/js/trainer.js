@@ -427,7 +427,7 @@ filterExercisesByGroup: function(group) {
 
     const list = Trainer.dayExercises[Trainer.selectedDay] || [];
     let html = '<table style="width:100%;border-collapse:collapse;margin-bottom:10px;background:#fff8f0;">';
-    html += '<tr style="background:#f3e7d9;"><th style="padding:6px;color:#eb8d00;border-bottom:2px solid #eb8d00;">Vežba</th><th style="color:#eb8d00;border-bottom:2px solid #eb8d00;">Grupa</th><th style="color:#eb8d00;border-bottom:2px solid #eb8d00;">Serije</th><th style="color:#eb8d00;border-bottom:2px solid #eb8d00;">Ponavljanja</th><th></th></tr>';
+    html += '<tr style="background:#f3e7d9;"><th style="padding:6px;color:#eb8d00;border-bottom:2px solid #eb8d00;">Vežba</th><th style="color:#eb8d00;border-bottom:2px solid #eb8d00;">Grupa</th><th style="color:#eb8d00;border-bottom:2px solid #eb8d00;">Serije</th><th style="color:#eb8d00;border-bottom:2px solid #eb8d00;">Ponavljanja po seriji</th><th></th></tr>';
 
     if (list.length === 0) {
         html += `<tr><td colspan="5" style="text-align:center;color:#eb8d00;padding:12px;">Niste odabrali nijednu vežbu za ovaj dan.</td></tr>`;
@@ -437,7 +437,7 @@ filterExercisesByGroup: function(group) {
                 <td style="padding:6px;color:#eb8d00;">${exercise.naziv_vezbe}</td>
                 <td style="color:#eb8d00;">${exercise.grupa_misica}</td>
                 <td><input type="number" min="1" value="${exercise.sets}" data-index="${index}" data-type="sets" style="width:50px;background:#fff8f0;color:#eb8d00;border:1px solid #eb8d00;border-radius:4px;text-align:center;"></td>
-                <td><input type="number" min="1" value="${exercise.repetitions}" data-index="${index}" data-type="repetitions" style="width:50px;background:#fff8f0;color:#eb8d00;border:1px solid #eb8d00;border-radius:4px;text-align:center;"></td>
+                <td><input type="text" value="${(exercise.seets || []).join(',')}" data-index="${index}" data-type="seets" style="width:80px;background:#fff8f0;color:#eb8d00;border:1px solid #eb8d00;border-radius:4px;text-align:center;"></td>
                 <td><span class="remove-exercise" data-index="${index}" style="color:#eb8d00;cursor:pointer;font-size:1.2em;"><i class="fas fa-times"></i></span></td>
             </tr>`;
         });
@@ -447,11 +447,29 @@ filterExercisesByGroup: function(group) {
     container.innerHTML = html;
 
     // Dodaj event listenere za promenu serija/ponavljanja i brisanje vežbi
-    container.querySelectorAll('input[type=number]').forEach(input => {
+    container.querySelectorAll('input').forEach(input => {
         input.addEventListener('change', (e) => {
             const index = parseInt(e.target.getAttribute('data-index'));
             const type = e.target.getAttribute('data-type');
-            Trainer.dayExercises[Trainer.selectedDay][index][type] = parseInt(e.target.value);
+            if (type === 'seets') {
+                const arr = e.target.value.split(',').map(r => parseInt(r.trim())).filter(r => !isNaN(r) && r > 0);
+                Trainer.dayExercises[Trainer.selectedDay][index].seets = arr;
+                Trainer.dayExercises[Trainer.selectedDay][index].sets = arr.length;
+            } else if (type === 'sets') {
+                const newVal = parseInt(e.target.value);
+                Trainer.dayExercises[Trainer.selectedDay][index].sets = newVal;
+                const currentArr = Trainer.dayExercises[Trainer.selectedDay][index].seets || [];
+                if (currentArr.length > newVal) {
+                    Trainer.dayExercises[Trainer.selectedDay][index].seets = currentArr.slice(0, newVal);
+                } else if (currentArr.length < newVal) {
+                    const lastVal = currentArr[currentArr.length - 1] || 1;
+                    while (Trainer.dayExercises[Trainer.selectedDay][index].seets.length < newVal) {
+                        Trainer.dayExercises[Trainer.selectedDay][index].seets.push(lastVal);
+                    }
+                }
+            } else {
+                Trainer.dayExercises[Trainer.selectedDay][index][type] = parseInt(e.target.value);
+            }
         });
     });
 
@@ -499,8 +517,8 @@ filterExercisesByGroup: function(group) {
                         user_id: this.currentClient.id,
                         exercise_id: exercise.exercise_id,
                         day: day,
-                        repetitions: exercise.repetitions,
-                        sets: exercise.sets
+                        sets: exercise.sets,
+                        seets: exercise.seets
                     });
                 });
             }
@@ -1016,13 +1034,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('add-exercise-to-list')) {
         document.getElementById('add-exercise-to-list').onclick = function() {
             const sets = parseInt(document.getElementById('sets-input').value) || 3;
-            const reps = parseInt(document.getElementById('reps-input').value) || 12;
+            const repsInput = document.getElementById('reps-input').value;
+            const repsArray = repsInput.split(',').map(r => parseInt(r.trim())).filter(r => !isNaN(r) && r > 0);
+            if (repsArray.length !== sets) {
+                Utils.showAlert('Broj ponavljanja mora odgovarati broju serija (koristite zarez za razdvajanje).', 'error');
+                return;
+            }
             const ex = Trainer.selectedExercise;
             if (!ex) {
                 Utils.showAlert('Izaberite vežbu!', 'error');
                 return;
             }
-            if (sets <= 0 || reps <= 0) {
+            if (sets <= 0 || repsArray.some(r => r <= 0)) {
                 Utils.showAlert('Serije i ponavljanja moraju biti veći od 0!', 'error');
                 return;
             }
@@ -1036,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 grupa_misica: ex.grupa_misica,
                 video_link: ex.video_link,
                 sets,
-                repetitions: reps
+                seets: repsArray
             });
             Trainer.updateSelectedExercisesList();
             Utils.showAlert('Vežba uspešno dodata!', 'success');

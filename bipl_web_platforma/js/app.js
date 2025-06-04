@@ -200,6 +200,7 @@ const App = {
                 obim_struk: parseFloat(document.getElementById('measurement-waist').value),
                 obim_ramena: parseFloat(document.getElementById('measurement-shoulders').value),
                 obim_noga: parseInt(document.getElementById('measurement-legs').value),
+                obim_ruka: parseFloat(document.getElementById('measurement-arms').value),
                 tezina: parseFloat(document.getElementById('measurement-weight').value)
             };
             Client.saveMeasurements(formData);
